@@ -1,0 +1,18 @@
+db.getCollection('docs').aggregate([
+    { $facet:
+        {
+            "contents unwound": [
+                { $project: { _id: 1, contents: 1 } },
+                { $unwind: { path: "$contents", includeArrayIndex: "ArrayIndex" } },
+                { $lookup: { from: "docs", localField: "contents", foreignField: "_id", as: "testname" } },
+                { $unwind: { path: "$testname" } },
+                { $addFields: { dataValue: "$testname.value" } },
+                { $project: { _id: 1, contents: 1, ArrayIndex: 1, dataValue: 1 } }
+            ],
+            "containers unwound": [
+                { $project: { _id: 1, container: 1 } },
+                { $unwind: { path: "$container", includeArrayIndex: "ArrayIndex" } }
+            ]
+        }
+    }
+]);
