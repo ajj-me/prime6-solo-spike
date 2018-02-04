@@ -13,8 +13,25 @@ app.get('/mongodbtest', (req, res) => {
         console.log('connected to mongoclient');
         const db = client.db('prime6_solo_spike');
         
-        const collection = db.collection('doodles');
-        collection.find({}).toArray(function(error, result) {
+        const collection = db.collection('docs');
+        collection.aggregate([
+            { $facet:
+                {
+                    "contents unwound": [
+                        { $project: { _id: 1, contents: 1 } },
+                        { $unwind: { path: "$contents", includeArrayIndex: "ArrayIndex" } },
+                        { $lookup: { from: "docs", localField: "contents", foreignField: "_id", as: "testname" } },
+                        { $unwind: { path: "$testname" } },
+                        { $addFields: { dataValue: "$testname.value" } },
+                        { $project: { _id: 1, contents: 1, ArrayIndex: 1, dataValue: 1 } }
+                    ],
+                    "containers unwound": [
+                        { $project: { _id: 1, container: 1 } },
+                        { $unwind: { path: "$container", includeArrayIndex: "ArrayIndex" } }
+                    ]
+                }
+            }
+        ]).toArray(function(error, result) {
             if(error) {
                 console.log('error in db', error);
             } else {
